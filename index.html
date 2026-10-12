@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flat Wall Display</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap">
+<style>
+/* Three equal-weight columns on a fixed 1920x1080 stage, scaled to fit any screen. */
+:root {
+  --ground: #0E1116;
+  --panel: #151A21;
+  --ink: #F2F0EA;
+  --ink-2: #C9CDD3;
+  --ink-3: #9BA3AE;
+  --ink-4: #7C8591;
+  --rule: rgba(242, 240, 234, 0.14);
+  --hair: rgba(242, 240, 234, 0.08);
+  --amber: #F5B83D;
+  --coral: #FF7A59;
+  --now: #FF4D3D;
+  --rain: #7CC4F2;
+  --font: 'Archivo', 'Helvetica Neue', Arial, sans-serif;
+  color-scheme: dark;
+}
+html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+body { font-family: var(--font); color: var(--ink); cursor: default; }
+body.idle { cursor: none; }
+#stage {
+  position: absolute; left: 50%; top: 50%;
+  width: 1920px; height: 1080px;
+  transform-origin: center center;
+  display: flex; background: var(--ground);
+  font-variant-numeric: tabular-nums;
+}
+.col { flex-shrink: 0; box-sizing: border-box; display: flex; flex-direction: column; }
+.col-left { width: 560px; padding: 48px 56px; background: var(--panel); gap: 44px; }
+.col-mid { width: 760px; padding: 48px 56px; gap: 44px; }
+.col-right { width: 600px; padding: 48px 56px 40px 48px; background: var(--panel); overflow: hidden; }
+.top { height: 280px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: flex-end; border-bottom: 2px solid var(--rule); }
+
+/* Clock */
+.clock { gap: 10px; padding-bottom: 24px; }
+.time { display: flex; align-items: baseline; gap: 14px; }
+.hhmm { font-size: 128px; font-weight: 700; letter-spacing: -0.04em; line-height: 0.9; }
+.ss { font-size: 40px; font-weight: 500; color: #8A929D; line-height: 1; }
+.date { font-size: 30px; font-weight: 500; color: var(--ink-2); }
+
+/* Panel headings */
+.panel { display: flex; flex-direction: column; gap: 20px; min-height: 0; }
+.panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+.panel-head h2 { margin: 0; font-size: 44px; font-weight: 800; letter-spacing: -0.01em; }
+.panel-meta { font-size: 22px; color: var(--ink-3); }
+
+/* To-do */
+.todos { display: flex; flex-direction: column; }
+.todo { display: flex; align-items: flex-start; gap: 20px; padding: 18px 0; border-bottom: 1px solid var(--hair); }
+.box { width: 30px; height: 30px; flex-shrink: 0; margin-top: 3px; box-sizing: border-box; border: 3px solid var(--ink-4); border-radius: 8px; }
+.todo span { font-size: 32px; font-weight: 500; line-height: 1.25; }
+
+/* Weather */
+.weather { gap: 6px; padding-bottom: 20px; }
+.wx-row { position: relative; width: 648px; }
+.wx-times { height: 22px; }
+.wx-times span { position: absolute; top: 0; transform: translateX(-50%); font-size: 18px; font-weight: 500; color: var(--ink-3); white-space: nowrap; }
+.wx-chart { height: 162px; }
+.wx-chart svg { position: absolute; left: 0; top: 0; }
+.wx-dot { position: absolute; width: 10px; height: 10px; border-radius: 50%; background: var(--ink); }
+.wx-temp { position: absolute; transform: translateX(-50%); font-size: 26px; font-weight: 700; white-space: nowrap; }
+.wx-icons { height: 56px; }
+.wx-icon { position: absolute; top: 0; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.wx-icon span { font-size: 16px; font-weight: 500; color: var(--ink-3); }
+.wx-msg { font-size: 24px; color: var(--ink-3); padding-bottom: 60px; }
+
+/* Headlines */
+.news { flex-grow: 1; gap: 12px; }
+.news-empty { font-size: 24px; line-height: 1.4; color: var(--ink-4); max-width: 520px; padding-top: 12px; }
+.story { display: flex; align-items: baseline; gap: 20px; padding: 15px 0; border-bottom: 1px solid var(--hair); }
+.story .n { width: 34px; flex-shrink: 0; font-size: 22px; font-weight: 700; color: var(--ink-4); }
+.story .h { font-size: 28px; font-weight: 600; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* Tube */
+.tube { display: flex; flex-direction: column; }
+.line { display: flex; align-items: center; gap: 16px; border-bottom: 1px solid var(--hair); }
+.swatch { width: 10px; height: 32px; border-radius: 3px; flex-shrink: 0; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.28); }
+.line-body { flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.line-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 32px; }
+.line-name { font-size: 26px; font-weight: 600; }
+.line-ok { font-size: 20px; font-weight: 500; color: var(--ink-3); flex-shrink: 0; }
+.pill { font-size: 19px; font-weight: 700; padding: 4px 12px; border-radius: 999px; color: #14110C; flex-shrink: 0; }
+.pill.minor { background: var(--amber); }
+.pill.major { background: var(--coral); }
+.where { font-size: 20px; font-weight: 500; line-height: 24px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <section class="col col-left">
+    <div class="top clock">
+      <div class="time"><span class="hhmm" id="hhmm">--:--</span><span class="ss" id="ss">--</span></div>
+      <div class="date" id="date"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2>Flat to-do</h2><span class="panel-meta" id="todo-count"></span></div>
+      <div class="todos" id="todos"></div>
+    </div>
+  </section>
+
+  <section class="col col-mid">
+    <div class="top weather" id="weather"><div class="wx-msg">Loading forecast…</div></div>
+    <div class="panel news">
+      <div class="panel-head"><h2>Top stories</h2><span class="panel-meta">Financial Times</span></div>
+      <div id="news"><div class="news-empty">Headlines will appear here once the news feed is connected.</div></div>
+    </div>
+  </section>
+
+  <section class="col col-right">
+    <div class="tube" id="tube"></div>
+  </section>
+</div>
+
+<script>
+/* ================= SETTINGS — edit these ================= */
+const SETTINGS = {
+  // Flat to-do list. Add or remove lines here.
+  todos: [
+    'Set up water in new flat'
+  ],
+  // Weather location (central London by default).
+  latitude: 51.5074,
+  longitude: -0.1278,
+  // Optional free TfL key from api-portal.tfl.gov.uk ('' works too).
+  tflKey: '',
+  tubeRefreshMinutes: 2,
+  weatherRefreshMinutes: 30
+};
+/* ========================================================== */
+
+const LINES = [
+  { id: 'bakerloo', name: 'Bakerloo', color: '#B36305' },
+  { id: 'central', name: 'Central', color: '#E32017' },
+  { id: 'circle', name: 'Circle', color: '#FFD300' },
+  { id: 'district', name: 'District', color: '#00782A' },
+  { id: 'hammersmith-city', name: 'Hammersmith & City', color: '#F3A9BB' },
+  { id: 'jubilee', name: 'Jubilee', color: '#A0A5A9' },
+  { id: 'metropolitan', name: 'Metropolitan', color: '#9B0056' },
+  { id: 'northern', name: 'Northern', color: '#000000' },
+  { id: 'piccadilly', name: 'Piccadilly', color: '#003688' },
+  { id: 'victoria', name: 'Victoria', color: '#0098D4' },
+  { id: 'waterloo-city', name: 'Waterloo & City', color: '#95CDBA' }
+];
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const pad2 = (n) => String(n).padStart(2, '0');
+const fmtHour = (h) => ((h + 11) % 12 + 1) + (h < 12 || h === 24 ? 'am' : 'pm');
+
+/* ---------- Fit the 1920x1080 stage to any screen ---------- */
+function fit() {
+  const s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+  $('stage').style.transform = 'translate(-50%, -50%) scale(' + s + ')';
+}
+window.addEventListener('resize', fit);
+fit();
+
+/* ---------- Clock ---------- */
+function tickClock() {
+  const now = new Date();
+  $('hhmm').textContent = pad2(now.getHours()) + ':' + pad2(now.getMinutes());
+  $('ss').textContent = pad2(now.getSeconds());
+  $('date').textContent = now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+
+/* ---------- To-do ---------- */
+function renderTodos() {
+  const items = SETTINGS.todos;
+  $('todo-count').textContent = items.length === 0 ? 'All done' : items.length + (items.length === 1 ? ' task' : ' tasks');
+  $('todos').innerHTML = items.map((t) => '<div class="todo"><div class="box"></div><span>' + esc(t) + '</span></div>').join('');
+}
+
+/* ---------- Tube ---------- */
+let tubeState = {}; // id -> {status, sev, where}
+
+function isCurrent(s) {
+  const v = s.validityPeriods || [];
+  return v.length === 0 || v.some((p) => p.isNow);
+}
+// TfL severity codes: lower is worse for 0-9; 10 good; 18-20 informational.
+const DISRUPTED = new Set([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 15, 16, 17]);
+function rank(sev) {
+  if (sev <= 9) return sev;
+  if (sev === 11 || sev === 16) return 3.5;
+  return 8.5;
+}
+function isMajor(sev) {
+  return (sev >= 1 && sev <= 6) || sev === 11 || sev === 16;
+}
+function titleIfCaps(s) {
+  return s === s.toUpperCase() ? s.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()) : s;
+}
+function parseWhere(reason) {
+  if (!reason) return 'Whole line';
+  const text = reason.replace(/^[^:]{0,40}:\s*/, '');
+  const m = text.match(/between\s+(.+?)\s+and\s+(.+?)(?=\s+(?:due|because|while|until|after|from|on|stations?|whilst)\b|[.,;(]|$)/i);
+  if (!m) return 'Whole line';
+  const clean = (s) => titleIfCaps(s.split('/')[0].replace(/\s+stations?$/i, '').trim());
+  return clean(m[1]) + ' – ' + clean(m[2]);
+}
+
+async function loadTube() {
+  try {
+    const url = 'https://api.tfl.gov.uk/Line/Mode/tube/Status' + (SETTINGS.tflKey ? '?app_key=' + encodeURIComponent(SETTINGS.tflKey) : '');
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) throw new Error('TfL ' + res.status);
+    const data = await res.json();
+    const next = {};
+    data.forEach((line) => {
+      const current = (line.lineStatuses || []).filter(isCurrent);
+      const bad = current.filter((s) => DISRUPTED.has(s.statusSeverity));
+      if (bad.length) {
+        bad.sort((a, b) => rank(a.statusSeverity) - rank(b.statusSeverity));
+        const worst = bad[0];
+        next[line.id] = { status: worst.statusSeverityDescription, sev: worst.statusSeverity, where: parseWhere(worst.reason) };
+      } else if (current.some((s) => s.statusSeverity === 20)) {
+        next[line.id] = { status: 'Service Closed', sev: 20 };
+      } else {
+        next[line.id] = { status: 'Good Service', sev: 10 };
+      }
+    });
+    tubeState = next;
+    tubeState._ok = true;
+  } catch (e) {
+    if (!tubeState._ok) tubeState._error = true;
+  }
+  renderTube();
+}
+
+function renderTube() {
+  const rows = LINES.map((l) => {
+    const st = tubeState[l.id] || { status: tubeState._error ? 'Unavailable' : 'Updating…', sev: 10 };
+    return Object.assign({}, l, st, { disrupted: DISRUPTED.has(st.sev) });
+  });
+  const bad = rows.filter((r) => r.disrupted).length;
+  const listHeight = 1080 - 48 - 40;
+  const content = (rows.length - bad) * 32 + bad * 60 + rows.length;
+  const padY = Math.max(6, (listHeight - content) / rows.length / 2).toFixed(1);
+  $('tube').innerHTML = rows.map((r) => {
+    const right = r.disrupted
+      ? '<span class="pill ' + (isMajor(r.sev) ? 'major' : 'minor') + '">' + esc(r.status) + '</span>'
+      : '<span class="line-ok">' + esc(r.status) + '</span>';
+    const where = r.disrupted ? '<span class="where">' + esc(r.where) + '</span>' : '';
+    return '<div class="line" style="padding:' + padY + 'px 0">' +
+      '<div class="swatch" style="background:' + r.color + '"></div>' +
+      '<div class="line-body"><div class="line-top"><span class="line-name">' + esc(r.name) + '</span>' + right + '</div>' + where + '</div>' +
+      '</div>';
+  }).join('');
+}
+
+/* ---------- Weather ---------- */
+let wx = null;
+
+function skyKind(code, day) {
+  if (code === 0 || code === 1) return day ? 'sun' : 'moon';
+  if (code === 2) return day ? 'partly' : 'cloud';
+  if (code === 3 || code === 45 || code === 48) return 'cloud';
+  if ((code >= 71 && code <= 77) || code === 85 || code === 86) return 'snow';
+  return 'rain'; // drizzle, rain, showers, thunder
+}
+
+const ICONS = {
+  sun: '<svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="#F5B83D" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="17" cy="17" r="6"/><line x1="17" y1="3" x2="17" y2="6"/><line x1="17" y1="28" x2="17" y2="31"/><line x1="3" y1="17" x2="6" y2="17"/><line x1="28" y1="17" x2="31" y2="17"/><line x1="7" y1="7" x2="9" y2="9"/><line x1="25" y1="25" x2="27" y2="27"/><line x1="27" y1="7" x2="25" y2="9"/><line x1="9" y1="25" x2="7" y2="27"/></svg>',
+  moon: '<svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="#C9CDD3" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M25 21.5A10 10 0 1 1 14.5 9a8 8 0 0 0 10.5 12.5z"/></svg>',
+  partly: '<svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5" stroke="#F5B83D"/><line x1="12" y1="2" x2="12" y2="4" stroke="#F5B83D"/><line x1="2" y1="12" x2="4" y2="12" stroke="#F5B83D"/><line x1="5" y1="5" x2="6.5" y2="6.5" stroke="#F5B83D"/><path d="M13 29h12a5.5 5.5 0 0 0 0-11 7.5 7.5 0 0 0-14.2 2.2A4.5 4.5 0 0 0 13 29z" stroke="#E6E3DA" fill="#0E1116"/></svg>',
+  cloud: '<svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="#C9CDD3" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 26h14a6 6 0 0 0 0-12 8 8 0 0 0-15.3 2.4A5 5 0 0 0 10 26z"/></svg>',
+  rain: '<svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 20h14a6 6 0 0 0 0-12 8 8 0 0 0-15.3 2.4A5 5 0 0 0 10 20z" stroke="#C9CDD3"/><line x1="12" y1="24" x2="10" y2="30" stroke="#7CC4F2"/><line x1="18" y1="24" x2="16" y2="30" stroke="#7CC4F2"/><line x1="24" y1="24" x2="22" y2="30" stroke="#7CC4F2"/></svg>',
+  snow: '<svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 20h14a6 6 0 0 0 0-12 8 8 0 0 0-15.3 2.4A5 5 0 0 0 10 20z" stroke="#C9CDD3"/><circle cx="11" cy="27" r="1.4" fill="#F2F0EA" stroke="none"/><circle cx="17" cy="29" r="1.4" fill="#F2F0EA" stroke="none"/><circle cx="23" cy="27" r="1.4" fill="#F2F0EA" stroke="none"/></svg>'
+};
+
+async function loadWeather() {
+  try {
+    const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + SETTINGS.latitude + '&longitude=' + SETTINGS.longitude +
+      '&hourly=temperature_2m,weather_code,is_day&timezone=Europe%2FLondon&forecast_days=2&models=ukmo_seamless';
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) throw new Error('Weather ' + res.status);
+    const d = await res.json();
+    const h = d.hourly;
+    const temps = h.temperature_2m.slice(0, 25);
+    const codes = h.weather_code.slice(0, 24);
+    const days = h.is_day.slice(0, 24);
+    if (temps.length < 25 || temps.some((t) => t == null)) throw new Error('Incomplete forecast');
+    wx = { temps, kinds: codes.map((c, i) => skyKind(c, days[i] === 1)) };
+  } catch (e) {
+    if (!wx) $('weather').innerHTML = '<div class="wx-msg">Weather unavailable — retrying shortly</div>';
+  }
+  renderWeather();
+}
+
+function renderWeather() {
+  if (!wx) return;
+  const { temps, kinds } = wx;
+  const X0 = 24, X1 = 624, YT = 40, YB = 118, AX = 158;
+  const tmin = Math.min(...temps), tmax = Math.max(...temps);
+  const xh = (hr) => X0 + (hr / 24) * (X1 - X0);
+  const yt = (t) => YB - ((t - tmin) / (tmax - tmin || 1)) * (YB - YT);
+  const f = (n) => n.toFixed(1);
+  const clampX = (x) => Math.max(36, Math.min(612, x));
+
+  const pts = temps.map((t, hr) => [xh(hr), yt(t)]);
+  let line = 'M' + f(pts[0][0]) + ' ' + f(pts[0][1]);
+  for (let i = 1; i < pts.length; i++) {
+    const [px, py] = pts[i - 1], [cx, cy] = pts[i];
+    line += ' Q' + f(px) + ' ' + f(py) + ' ' + f((px + cx) / 2) + ' ' + f((py + cy) / 2);
+  }
+  line += ' L' + f(pts[24][0]) + ' ' + f(pts[24][1]);
+  const area = line + ' L' + X1 + ' ' + AX + ' L' + X0 + ' ' + AX + ' Z';
+
+  const minH = temps.indexOf(tmin), maxH = temps.indexOf(tmax);
+  const seen = {};
+  const labels = [{ h: minH, below: true }, { h: 8 }, { h: maxH }, { h: 18 }]
+    .filter((p) => (seen[p.h] ? false : (seen[p.h] = true)))
+    .sort((a, b) => a.h - b.h)
+    .map((p) => ({ x: xh(p.h), y: yt(temps[p.h]), below: p.below, temp: Math.round(temps[p.h]) + '°', time: fmtHour(p.h) }));
+
+  // One icon per weather change; changes within 2 hours of the last icon replace it.
+  const slots = [];
+  kinds.forEach((k, hr) => {
+    if (hr > 0 && k === kinds[hr - 1]) return;
+    const last = slots[slots.length - 1];
+    if (last && hr - last.h < 2) { last.h = hr; last.kind = k; } else { slots.push({ h: hr, kind: k }); }
+  });
+
+  const now = new Date();
+  const nowH = now.getHours() + now.getMinutes() / 60;
+  const i = Math.min(Math.floor(nowH), 23);
+  const ny = yt(temps[i] + (temps[i + 1] - temps[i]) * (nowH - i));
+  const nx = xh(nowH);
+
+  $('weather').innerHTML =
+    '<div class="wx-row wx-times">' + labels.map((l) => '<span style="left:' + f(clampX(l.x)) + 'px">' + l.time + '</span>').join('') + '</div>' +
+    '<div class="wx-row wx-chart">' +
+      '<svg width="648" height="162" viewBox="0 0 648 162" fill="none" aria-hidden="true">' +
+        '<path d="' + area + '" fill="rgba(242,240,234,0.06)"/>' +
+        '<line x1="24" y1="158" x2="624" y2="158" stroke="rgba(242,240,234,0.18)" stroke-width="2"/>' +
+        '<path d="' + line + '" stroke="#E6E3DA" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>' +
+        '<line x1="' + f(nx) + '" y1="' + f(ny - 12) + '" x2="' + f(nx) + '" y2="' + f(ny + 12) + '" stroke="#FF4D3D" stroke-width="4" stroke-linecap="round"/>' +
+      '</svg>' +
+      labels.map((l) =>
+        '<div class="wx-dot" style="left:' + f(l.x - 5) + 'px;top:' + f(l.y - 5) + 'px"></div>' +
+        '<span class="wx-temp" style="left:' + f(clampX(l.x)) + 'px;top:' + f(l.below ? l.y + 8 : l.y - 38) + 'px">' + l.temp + '</span>'
+      ).join('') +
+    '</div>' +
+    '<div class="wx-row wx-icons">' + slots.map((s) =>
+      '<div class="wx-icon" style="left:' + f(clampX(xh(s.h))) + 'px">' + ICONS[s.kind] + '<span>' + fmtHour(s.h) + '</span></div>'
+    ).join('') + '</div>';
+}
+
+/* ---------- Keep the screen awake, hide the cursor, fullscreen on double-click ---------- */
+let wakeLock = null;
+async function keepAwake() {
+  try { if ('wakeLock' in navigator && !wakeLock) { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => { wakeLock = null; }); } } catch (e) {}
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') keepAwake(); });
+document.addEventListener('click', keepAwake);
+document.addEventListener('dblclick', () => {
+  try { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); } catch (e) {}
+});
+let idleTimer;
+document.addEventListener('mousemove', () => {
+  document.body.classList.remove('idle');
+  clearTimeout(idleTimer);
+  idleTimer = setTimeout(() => document.body.classList.add('idle'), 3000);
+});
+
+/* ---------- Start ---------- */
+tickClock();
+renderTodos();
+renderTube();
+loadTube();
+loadWeather();
+keepAwake();
+setInterval(tickClock, 1000);
+setInterval(loadTube, SETTINGS.tubeRefreshMinutes * 60 * 1000);
+setInterval(loadWeather, SETTINGS.weatherRefreshMinutes * 60 * 1000);
+setInterval(renderWeather, 60 * 1000); // move the "now" marker
+// Reload the whole page every 6 hours so updates to this file are picked up.
+setTimeout(() => location.reload(), 6 * 60 * 60 * 1000);
+</script>
+</body>
+</html>
