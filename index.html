@@ -133,6 +133,10 @@ const SETTINGS = {
   longitude: -0.1278,
   // Optional free TfL key from api-portal.tfl.gov.uk ('' works too).
   tflKey: '',
+  // Address of the FT headlines relay (Cloudflare Worker). '' = not connected.
+  newsUrl: '',
+  newsCount: 6,
+  newsRefreshMinutes: 15,
   tubeRefreshMinutes: 2,
   weatherRefreshMinutes: 30
 };
@@ -356,6 +360,25 @@ function renderWeather() {
     ).join('') + '</div>';
 }
 
+/* ---------- Headlines ---------- */
+let newsLoaded = false;
+async function loadNews() {
+  if (!SETTINGS.newsUrl) return;
+  try {
+    const res = await fetch(SETTINGS.newsUrl, { cache: 'no-store' });
+    if (!res.ok) throw new Error('News ' + res.status);
+    const d = await res.json();
+    const list = (d.headlines || []).slice(0, SETTINGS.newsCount);
+    if (!list.length) throw new Error('No headlines');
+    $('news').innerHTML = list.map((h, i) =>
+      '<div class="story"><span class="n">' + pad2(i + 1) + '</span><span class="h">' + esc(h) + '</span></div>'
+    ).join('');
+    newsLoaded = true;
+  } catch (e) {
+    if (!newsLoaded) $('news').innerHTML = '<div class="news-empty">Headlines unavailable right now — retrying shortly.</div>';
+  }
+}
+
 /* ---------- Keep the screen awake, hide the cursor, fullscreen on double-click ---------- */
 let wakeLock = null;
 async function keepAwake() {
@@ -379,7 +402,9 @@ renderTodos();
 renderTube();
 loadTube();
 loadWeather();
+loadNews();
 keepAwake();
+setInterval(loadNews, SETTINGS.newsRefreshMinutes * 60 * 1000);
 setInterval(tickClock, 1000);
 setInterval(loadTube, SETTINGS.tubeRefreshMinutes * 60 * 1000);
 setInterval(loadWeather, SETTINGS.weatherRefreshMinutes * 60 * 1000);
