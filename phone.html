@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0E1116">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Flat">
+<title>Flat Morning Brief</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap">
+<style>
+/* One scrolling column in the wall display's palette: time, tube, weather, to-dos, headlines. */
+:root {
+  --ground: #0E1116;
+  --panel: #151A21;
+  --ink: #F2F0EA;
+  --ink-2: #C9CDD3;
+  --ink-3: #9BA3AE;
+  --ink-4: #7C8591;
+  --hair: rgba(242, 240, 234, 0.08);
+  --amber: #F5B83D;
+  --coral: #FF7A59;
+  --font: 'Archivo', -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  color-scheme: dark;
+}
+html { background: var(--ground); -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--ground); color: var(--ink); font-family: var(--font);
+  font-variant-numeric: tabular-nums;
+  padding: calc(env(safe-area-inset-top, 0px) + 20px) calc(env(safe-area-inset-right, 0px) + 16px) calc(env(safe-area-inset-bottom, 0px) + 32px) calc(env(safe-area-inset-left, 0px) + 16px);
+}
+main { max-width: 520px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+
+header { padding: 4px 4px 10px; display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.hhmm { font-size: 56px; font-weight: 700; letter-spacing: -0.04em; line-height: 0.95; }
+.date { font-size: 17px; font-weight: 500; color: var(--ink-2); margin-top: 6px; }
+.updated { font-size: 13px; color: var(--ink-4); text-align: right; padding-bottom: 4px; }
+
+.card { background: var(--panel); border-radius: 18px; padding: 16px 16px 8px; }
+.card h2 { margin: 0 0 6px; font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); display: flex; justify-content: space-between; gap: 8px; }
+.card h2 span { font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--ink-4); font-size: 13px; }
+.msg { font-size: 15px; color: var(--ink-4); padding: 6px 0 12px; }
+
+/* Tube */
+.line { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--hair); }
+.line:last-child { border-bottom: 0; }
+.swatch { width: 6px; height: 26px; border-radius: 3px; flex-shrink: 0; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.28); }
+.line-body { flex-grow: 1; min-width: 0; }
+.line-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.line-name { font-size: 17px; font-weight: 600; }
+.line-ok { font-size: 15px; color: var(--ink-3); flex-shrink: 0; }
+.pill { font-size: 13px; font-weight: 700; padding: 3px 9px; border-radius: 999px; color: #14110C; flex-shrink: 0; }
+.pill.minor { background: var(--amber); }
+.pill.major { background: var(--coral); }
+.where { font-size: 14px; color: var(--ink-2); margin-top: 3px; }
+
+/* Weather */
+#weather svg { display: block; width: 100%; height: auto; }
+
+/* To-do */
+.todo { display: flex; align-items: flex-start; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--hair); }
+.todo:last-child { border-bottom: 0; }
+.box { width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; box-sizing: border-box; border: 2px solid var(--ink-4); border-radius: 5px; }
+.todo span { font-size: 17px; line-height: 1.3; }
+
+/* Headlines */
+.story { display: flex; align-items: baseline; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--hair); }
+.story:last-child { border-bottom: 0; }
+.story .n { width: 20px; flex-shrink: 0; font-size: 13px; font-weight: 700; color: var(--ink-4); }
+.story .h { font-size: 16px; line-height: 1.35; color: var(--ink); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <div class="hhmm" id="hhmm">--:--</div>
+      <div class="date" id="date"></div>
+    </div>
+    <div class="updated" id="updated"></div>
+  </header>
+
+  <section class="card">
+    <h2>Tube <span id="tube-summary"></span></h2>
+    <div id="tube"><div class="msg">Loading tube status…</div></div>
+  </section>
+
+  <section class="card">
+    <h2>Today</h2>
+    <div id="weather"><div class="msg">Loading forecast…</div></div>
+  </section>
+
+  <section class="card">
+    <h2>Flat to-do <span id="todo-count"></span></h2>
+    <div id="todos"></div>
+  </section>
+
+  <section class="card">
+    <h2>Top stories</h2>
+    <div id="news"><div class="msg">Loading headlines…</div></div>
+  </section>
+</main>
+
+<script src="settings.js"></script>
+<script>
+const SETTINGS = window.FLAT_SETTINGS;
+
+const LINES = [
+  { id: 'bakerloo', name: 'Bakerloo', color: '#B36305' },
+  { id: 'central', name: 'Central', color: '#E32017' },
+  { id: 'circle', name: 'Circle', color: '#FFD300' },
+  { id: 'district', name: 'District', color: '#00782A' },
+  { id: 'hammersmith-city', name: 'Hammersmith & City', color: '#F3A9BB' },
+  { id: 'jubilee', name: 'Jubilee', color: '#A0A5A9' },
+  { id: 'metropolitan', name: 'Metropolitan', color: '#9B0056' },
+  { id: 'northern', name: 'Northern', color: '#000000' },
+  { id: 'piccadilly', name: 'Piccadilly', color: '#003688' },
+  { id: 'victoria', name: 'Victoria', color: '#0098D4' },
+  { id: 'waterloo-city', name: 'Waterloo & City', color: '#95CDBA' }
+];
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const pad2 = (n) => String(n).padStart(2, '0');
+const fmtHour = (h) => ((h + 11) % 12 + 1) + (h < 12 || h === 24 ? 'am' : 'pm');
+
+/* ---------- Clock ---------- */
+function tickClock() {
+  const now = new Date();
+  $('hhmm').textContent = pad2(now.getHours()) + ':' + pad2(now.getMinutes());
+  $('date').textContent = now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+
+/* ---------- To-do ---------- */
+function renderTodos() {
+  const items = SETTINGS.todos;
+  $('todo-count').textContent = items.length === 0 ? 'All done' : items.length + (items.length === 1 ? ' task' : ' tasks');
+  $('todos').innerHTML = items.length
+    ? items.map((t) => '<div class="todo"><div class="box"></div><span>' + esc(t) + '</span></div>').join('')
+    : '<div class="msg">Nothing to do.</div>';
+}
+
+/* ---------- Tube ---------- */
+const DISRUPTED = new Set([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 15, 16, 17]);
+const isCurrent = (s) => { const v = s.validityPeriods || []; return v.length === 0 || v.some((p) => p.isNow); };
+const rank = (sev) => (sev <= 9 ? sev : (sev === 11 || sev === 16) ? 3.5 : 8.5);
+const isMajor = (sev) => (sev >= 1 && sev <= 6) || sev === 11 || sev === 16;
+const titleIfCaps = (s) => (s === s.toUpperCase() ? s.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()) : s);
+function parseWhere(reason) {
+  if (!reason) return 'Whole line';
+  const text = reason.replace(/^[^:]{0,40}:\s*/, '');
+  const m = text.match(/between\s+(.+?)\s+and\s+(.+?)(?=\s+(?:due|because|while|until|after|from|on|stations?|whilst)\b|[.,;(]|$)/i);
+  if (!m) return 'Whole line';
+  const clean = (s) => titleIfCaps(s.split('/')[0].replace(/\s+stations?$/i, '').trim());
+  return clean(m[1]) + ' – ' + clean(m[2]);
+}
+
+async function loadTube() {
+  try {
+    const url = 'https://api.tfl.gov.uk/Line/Mode/tube/Status' + (SETTINGS.tflKey ? '?app_key=' + encodeURIComponent(SETTINGS.tflKey) : '');
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) throw new Error('TfL ' + res.status);
+    const data = await res.json();
+    const state = {};
+    data.forEach((line) => {
+      const current = (line.lineStatuses || []).filter(isCurrent);
+      const bad = current.filter((s) => DISRUPTED.has(s.statusSeverity));
+      if (bad.length) {
+        bad.sort((a, b) => rank(a.statusSeverity) - rank(b.statusSeverity));
+        const w = bad[0];
+        state[line.id] = { status: w.statusSeverityDescription, sev: w.statusSeverity, where: parseWhere(w.reason) };
+      } else if (current.some((s) => s.statusSeverity === 20)) {
+        state[line.id] = { status: 'Service Closed', sev: 20 };
+      } else {
+        state[line.id] = { status: 'Good Service', sev: 10 };
+      }
+    });
+    const rows = LINES.map((l) => Object.assign({}, l, state[l.id] || { status: 'Unknown', sev: 10 }));
+    const bad = rows.filter((r) => DISRUPTED.has(r.sev)).length;
+    $('tube-summary').textContent = bad === 0 ? 'Good service on all lines' : bad + (bad === 1 ? ' line disrupted' : ' lines disrupted');
+    $('tube').innerHTML = rows.map((r) => {
+      const disrupted = DISRUPTED.has(r.sev);
+      const right = disrupted
+        ? '<span class="pill ' + (isMajor(r.sev) ? 'major' : 'minor') + '">' + esc(r.status) + '</span>'
+        : '<span class="line-ok">' + esc(r.status) + '</span>';
+      return '<div class="line"><div class="swatch" style="background:' + r.color + '"></div><div class="line-body">' +
+        '<div class="line-top"><span class="line-name">' + esc(r.name) + '</span>' + right + '</div>' +
+        (disrupted ? '<div class="where">' + esc(r.where) + '</div>' : '') + '</div></div>';
+    }).join('');
+  } catch (e) {
+    $('tube').innerHTML = '<div class="msg">Tube status unavailable. Pull down to retry.</div>';
+  }
+}
+
+/* ---------- Weather ---------- */
+function skyKind(code, day) {
+  if (code === 0 || code === 1) return day ? 'sun' : 'moon';
+  if (code === 2) return day ? 'partly' : 'cloud';
+  if (code === 3 || code === 45 || code === 48) return 'cloud';
+  if ((code >= 71 && code <= 77) || code === 85 || code === 86) return 'snow';
+  return 'rain';
+}
+const ICONS = {
+  sun: '<g fill="none" stroke="#F5B83D" stroke-width="2.5" stroke-linecap="round"><circle cx="17" cy="17" r="6"/><line x1="17" y1="3" x2="17" y2="6"/><line x1="17" y1="28" x2="17" y2="31"/><line x1="3" y1="17" x2="6" y2="17"/><line x1="28" y1="17" x2="31" y2="17"/><line x1="7" y1="7" x2="9" y2="9"/><line x1="25" y1="25" x2="27" y2="27"/><line x1="27" y1="7" x2="25" y2="9"/><line x1="9" y1="25" x2="7" y2="27"/></g>',
+  moon: '<path d="M25 21.5A10 10 0 1 1 14.5 9a8 8 0 0 0 10.5 12.5z" fill="none" stroke="#C9CDD3" stroke-width="2.5" stroke-linejoin="round"/>',
+  partly: '<g fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5" stroke="#F5B83D"/><line x1="12" y1="2" x2="12" y2="4" stroke="#F5B83D"/><line x1="2" y1="12" x2="4" y2="12" stroke="#F5B83D"/><line x1="5" y1="5" x2="6.5" y2="6.5" stroke="#F5B83D"/><path d="M13 29h12a5.5 5.5 0 0 0 0-11 7.5 7.5 0 0 0-14.2 2.2A4.5 4.5 0 0 0 13 29z" stroke="#E6E3DA" fill="#151A21"/></g>',
+  cloud: '<path d="M10 26h14a6 6 0 0 0 0-12 8 8 0 0 0-15.3 2.4A5 5 0 0 0 10 26z" fill="none" stroke="#C9CDD3" stroke-width="2.5" stroke-linejoin="round"/>',
+  rain: '<g fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 20h14a6 6 0 0 0 0-12 8 8 0 0 0-15.3 2.4A5 5 0 0 0 10 20z" stroke="#C9CDD3"/><line x1="12" y1="24" x2="10" y2="30" stroke="#7CC4F2"/><line x1="18" y1="24" x2="16" y2="30" stroke="#7CC4F2"/><line x1="24" y1="24" x2="22" y2="30" stroke="#7CC4F2"/></g>',
+  snow: '<g><path d="M10 20h14a6 6 0 0 0 0-12 8 8 0 0 0-15.3 2.4A5 5 0 0 0 10 20z" fill="none" stroke="#C9CDD3" stroke-width="2.5" stroke-linejoin="round"/><circle cx="11" cy="27" r="1.4" fill="#F2F0EA"/><circle cx="17" cy="29" r="1.4" fill="#F2F0EA"/><circle cx="23" cy="27" r="1.4" fill="#F2F0EA"/></g>'
+};
+
+async function loadWeather() {
+  try {
+    const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + SETTINGS.latitude + '&longitude=' + SETTINGS.longitude +
+      '&hourly=temperature_2m,weather_code,is_day&timezone=Europe%2FLondon&forecast_days=2&models=ukmo_seamless';
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) throw new Error('Weather ' + res.status);
+    const h = (await res.json()).hourly;
+    const temps = h.temperature_2m.slice(0, 25);
+    if (temps.length < 25 || temps.some((t) => t == null)) throw new Error('Incomplete');
+    const kinds = h.weather_code.slice(0, 24).map((c, i) => skyKind(c, h.is_day[i] === 1));
+    renderWeather(temps, kinds);
+  } catch (e) {
+    $('weather').innerHTML = '<div class="msg">Weather unavailable. Pull down to retry.</div>';
+  }
+}
+
+function renderWeather(temps, kinds) {
+  // Drawn in a 360-wide coordinate box and scaled to the card's width.
+  const W = 360, X0 = 18, X1 = 342, YT = 52, YB = 104, AX = 132;
+  const tmin = Math.min(...temps), tmax = Math.max(...temps);
+  const xh = (hr) => X0 + (hr / 24) * (X1 - X0);
+  const yt = (t) => YB - ((t - tmin) / (tmax - tmin || 1)) * (YB - YT);
+  const f = (n) => n.toFixed(1);
+  const cx = (x) => Math.max(20, Math.min(W - 20, x));
+
+  const pts = temps.map((t, hr) => [xh(hr), yt(t)]);
+  let line = 'M' + f(pts[0][0]) + ' ' + f(pts[0][1]);
+  for (let i = 1; i < pts.length; i++) {
+    const [px, py] = pts[i - 1], [qx, qy] = pts[i];
+    line += ' Q' + f(px) + ' ' + f(py) + ' ' + f((px + qx) / 2) + ' ' + f((py + qy) / 2);
+  }
+  line += ' L' + f(pts[24][0]) + ' ' + f(pts[24][1]);
+  const area = line + ' L' + X1 + ' ' + AX + ' L' + X0 + ' ' + AX + ' Z';
+
+  const minH = temps.indexOf(tmin), maxH = temps.indexOf(tmax);
+  const seen = {};
+  const labels = [{ h: minH, below: true }, { h: 8 }, { h: maxH }, { h: 18 }]
+    .filter((p) => (seen[p.h] ? false : (seen[p.h] = true)))
+    .map((p) => ({ x: xh(p.h), y: yt(temps[p.h]), below: p.below, temp: Math.round(temps[p.h]) + '°', time: fmtHour(p.h) }));
+
+  const slots = [];
+  kinds.forEach((k, hr) => {
+    if (hr > 0 && k === kinds[hr - 1]) return;
+    const last = slots[slots.length - 1];
+    if (last && hr - last.h < 3) { last.h = hr; last.kind = k; } else { slots.push({ h: hr, kind: k }); }
+  });
+
+  const now = new Date();
+  const nowH = now.getHours() + now.getMinutes() / 60;
+  const i = Math.min(Math.floor(nowH), 23);
+  const ny = yt(temps[i] + (temps[i + 1] - temps[i]) * (nowH - i));
+  const nx = xh(nowH);
+
+  let svg = '<svg viewBox="0 0 ' + W + ' 196" role="img" aria-label="Temperature over the next 24 hours, from ' + Math.round(tmin) + ' to ' + Math.round(tmax) + ' degrees">';
+  svg += labels.map((l) => '<text x="' + f(cx(l.x)) + '" y="14" text-anchor="middle" font-size="11" font-weight="500" fill="#9BA3AE" font-family="Archivo, sans-serif">' + l.time + '</text>').join('');
+  svg += '<path d="' + area + '" fill="rgba(242,240,234,0.06)"/>';
+  svg += '<line x1="' + X0 + '" y1="' + AX + '" x2="' + X1 + '" y2="' + AX + '" stroke="rgba(242,240,234,0.18)" stroke-width="1.5"/>';
+  svg += '<path d="' + line + '" fill="none" stroke="#E6E3DA" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+  svg += labels.map((l) =>
+    '<circle cx="' + f(l.x) + '" cy="' + f(l.y) + '" r="3.5" fill="#F2F0EA"/>' +
+    '<text x="' + f(cx(l.x)) + '" y="' + f(l.below ? l.y + 20 : l.y - 10) + '" text-anchor="middle" font-size="16" font-weight="700" fill="#F2F0EA" font-family="Archivo, sans-serif">' + l.temp + '</text>'
+  ).join('');
+  svg += '<line x1="' + f(nx) + '" y1="' + f(ny - 9) + '" x2="' + f(nx) + '" y2="' + f(ny + 9) + '" stroke="#FF4D3D" stroke-width="3" stroke-linecap="round"/>';
+  svg += slots.map((s) => {
+    const x = cx(xh(s.h));
+    return '<g transform="translate(' + f(x - 12) + ' 144) scale(0.7)">' + ICONS[s.kind] + '</g>' +
+      '<text x="' + f(x) + '" y="190" text-anchor="middle" font-size="11" font-weight="500" fill="#9BA3AE" font-family="Archivo, sans-serif">' + fmtHour(s.h) + '</text>';
+  }).join('');
+  svg += '</svg>';
+  $('weather').innerHTML = svg;
+}
+
+/* ---------- Headlines ---------- */
+async function loadNews() {
+  if (!SETTINGS.newsUrl) { $('news').innerHTML = '<div class="msg">News feed not connected.</div>'; return; }
+  try {
+    const res = await fetch(SETTINGS.newsUrl, { cache: 'no-store' });
+    if (!res.ok) throw new Error('News ' + res.status);
+    const list = ((await res.json()).headlines || []).slice(0, SETTINGS.newsCount);
+    if (!list.length) throw new Error('Empty');
+    $('news').innerHTML = list.map((h, i) => '<div class="story"><span class="n">' + (i + 1) + '</span><span class="h">' + esc(h) + '</span></div>').join('');
+  } catch (e) {
+    $('news').innerHTML = '<div class="msg">Headlines unavailable. Pull down to retry.</div>';
+  }
+}
+
+/* ---------- Start, and refresh whenever the page comes back into view ---------- */
+async function refreshAll() {
+  tickClock();
+  renderTodos();
+  await Promise.all([loadTube(), loadWeather(), loadNews()]);
+  const now = new Date();
+  $('updated').textContent = 'Updated ' + pad2(now.getHours()) + ':' + pad2(now.getMinutes());
+}
+refreshAll();
+setInterval(tickClock, 15 * 1000);
+let lastRefresh = Date.now();
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && Date.now() - lastRefresh > 60 * 1000) {
+    lastRefresh = Date.now();
+    refreshAll();
+  }
+});
+</script>
+</body>
+</html>
