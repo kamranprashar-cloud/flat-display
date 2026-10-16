@@ -215,25 +215,29 @@ const ICONS = {
 async function loadWeather() {
   try {
     const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + SETTINGS.latitude + '&longitude=' + SETTINGS.longitude +
-      '&hourly=temperature_2m,weather_code,is_day&timezone=Europe%2FLondon&forecast_days=2&models=ukmo_seamless';
+      '&hourly=temperature_2m,apparent_temperature,weather_code,is_day&timezone=Europe%2FLondon&forecast_days=2&models=ukmo_seamless';
     const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) throw new Error('Weather ' + res.status);
     const h = (await res.json()).hourly;
-    const temps = h.temperature_2m.slice(0, 25);
-    if (temps.length < 25 || temps.some((t) => t == null)) throw new Error('Incomplete');
+    const actual = h.temperature_2m.slice(0, 25);
+    if (actual.length < 25 || actual.some((t) => t == null)) throw new Error('Incomplete');
+    const feels = (h.apparent_temperature || []).slice(0, 25);
+    const temps = feels.length === 25 && feels.every((t) => t != null) ? feels : actual;
     const kinds = h.weather_code.slice(0, 24).map((c, i) => skyKind(c, h.is_day[i] === 1));
-    renderWeather(temps, kinds);
+    renderWeather(temps, actual, kinds);
   } catch (e) {
     $('weather').innerHTML = '<div class="msg">Weather unavailable. Pull down to retry.</div>';
   }
 }
 
-function renderWeather(temps, kinds) {
+function renderWeather(temps, actual, kinds) {
   // Drawn in a 360-wide coordinate box and scaled to the card's width.
+  // temps = "feels like" (the labelled curve); actual = air temperature (faint dashed line).
   const W = 360, X0 = 18, X1 = 342, YT = 52, YB = 104, AX = 132;
   const tmin = Math.min(...temps), tmax = Math.max(...temps);
+  const lo = Math.min(tmin, ...actual), hi = Math.max(tmax, ...actual);
   const xh = (hr) => X0 + (hr / 24) * (X1 - X0);
-  const yt = (t) => YB - ((t - tmin) / (tmax - tmin || 1)) * (YB - YT);
+  const yt = (t) => YB - ((t - lo) / (hi - lo || 1)) * (YB - YT);
   const f = (n) => n.toFixed(1);
   const cx = (x) => Math.max(20, Math.min(W - 20, x));
 
@@ -244,6 +248,13 @@ function renderWeather(temps, kinds) {
     line += ' Q' + f(px) + ' ' + f(py) + ' ' + f((px + qx) / 2) + ' ' + f((py + qy) / 2);
   }
   line += ' L' + f(pts[24][0]) + ' ' + f(pts[24][1]);
+  let actualLine = '';
+  if (actual !== temps) {
+    const a = actual.map((t, hr) => [xh(hr), yt(t)]);
+    actualLine = 'M' + f(a[0][0]) + ' ' + f(a[0][1]);
+    for (let k = 1; k < a.length; k++) actualLine += ' Q' + f(a[k - 1][0]) + ' ' + f(a[k - 1][1]) + ' ' + f((a[k - 1][0] + a[k][0]) / 2) + ' ' + f((a[k - 1][1] + a[k][1]) / 2);
+    actualLine += ' L' + f(a[24][0]) + ' ' + f(a[24][1]);
+  }
   const area = line + ' L' + X1 + ' ' + AX + ' L' + X0 + ' ' + AX + ' Z';
 
   const minH = temps.indexOf(tmin), maxH = temps.indexOf(tmax);
@@ -265,10 +276,11 @@ function renderWeather(temps, kinds) {
   const ny = yt(temps[i] + (temps[i + 1] - temps[i]) * (nowH - i));
   const nx = xh(nowH);
 
-  let svg = '<svg viewBox="0 0 ' + W + ' 196" role="img" aria-label="Temperature over the next 24 hours, from ' + Math.round(tmin) + ' to ' + Math.round(tmax) + ' degrees">';
+  let svg = '<svg viewBox="0 0 ' + W + ' 196" role="img" aria-label="Feels-like temperature over the next 24 hours, from ' + Math.round(tmin) + ' to ' + Math.round(tmax) + ' degrees">';
   svg += labels.map((l) => '<text x="' + f(cx(l.x)) + '" y="14" text-anchor="middle" font-size="11" font-weight="500" fill="#9BA3AE" font-family="Archivo, sans-serif">' + l.time + '</text>').join('');
   svg += '<path d="' + area + '" fill="rgba(242,240,234,0.06)"/>';
   svg += '<line x1="' + X0 + '" y1="' + AX + '" x2="' + X1 + '" y2="' + AX + '" stroke="rgba(242,240,234,0.18)" stroke-width="1.5"/>';
+  if (actualLine) svg += '<path d="' + actualLine + '" fill="none" stroke="rgba(242,240,234,0.38)" stroke-width="1.5" stroke-dasharray="2 5" stroke-linecap="round"/>';
   svg += '<path d="' + line + '" fill="none" stroke="#E6E3DA" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
   svg += labels.map((l) =>
     '<circle cx="' + f(l.x) + '" cy="' + f(l.y) + '" r="3.5" fill="#F2F0EA"/>' +
